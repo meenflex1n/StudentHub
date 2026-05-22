@@ -1,27 +1,198 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="default">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Productivity & Learning Hub</title>
-    <!-- นำเข้า Tailwind CSS สำหรับการตกแต่งหน้าตาที่ทันสมัยและรองรับทุกหน้าจอ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- นำเข้า Font เพื่อความสวยงามอ่านง่าย -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; }
+        body { font-family: 'Kanit', sans-serif; transition: background 0.4s, color 0.4s; }
+
+        /* ===== DEFAULT THEME (Indigo) ===== */
+        [data-theme="default"] {
+            --bg: #f9fafb;
+            --card: #ffffff;
+            --nav-bg: #4f46e5;
+            --nav-btn-active: #3730a3;
+            --nav-btn-hover: #6366f1;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #eef2ff;
+            --accent-text: #4f46e5;
+            --input-focus: #6366f1;
+            --btn-done-text: #059669;
+            --btn-done-border: #a7f3d0;
+            --clock-bg: #eef2ff;
+            --clock-border: #c7d2fe;
+            --clock-text: #4f46e5;
+            --clock-sub: #818cf8;
+        }
+
+        /* ===== NIGHT LIGHT THEME ===== */
+        [data-theme="night"] {
+            --bg: #2e3440;
+            --card: #3b4252;
+            --nav-bg: #242933;
+            --nav-btn-active: #434c5e;
+            --nav-btn-hover: #4c566a;
+            --text-main: #eceff4;
+            --text-sub: #d8dee9;
+            --border: #4c566a;
+            --accent: #88c0d0;
+            --accent-hover: #81a1c1;
+            --accent-light: #3b4252;
+            --accent-text: #81a1c1;
+            --input-focus: #88c0d0;
+            --btn-done-text: #8fbcbb;
+            --btn-done-border: #434c5e;
+            --clock-bg: #242933;
+            --clock-border: #4c566a;
+            --clock-text: #88c0d0;
+            --clock-sub: #a3be8c;
+        }
+
+        /* ===== PASTEL PINK THEME ===== */
+        [data-theme="pink"] {
+            --bg: #fff0f6;
+            --card: #ffffff;
+            --nav-bg: #e879a0;
+            --nav-btn-active: #c44d7a;
+            --nav-btn-hover: #f06090;
+            --text-main: #4a1030;
+            --text-sub: #9e6080;
+            --border: #fce7f0;
+            --accent: #e879a0;
+            --accent-hover: #c44d7a;
+            --accent-light: #fff0f6;
+            --accent-text: #c44d7a;
+            --input-focus: #e879a0;
+            --btn-done-text: #be185d;
+            --btn-done-border: #fbcfe8;
+            --clock-bg: #fff0f6;
+            --clock-border: #fbb6d4;
+            --clock-text: #db2777;
+            --clock-sub: #f472b6;
+        }
+
+        /* Apply CSS variables */
+        body { background-color: var(--bg); color: var(--text-main); }
+        nav { background-color: var(--nav-bg) !important; }
+        .card { background-color: var(--card); border-color: var(--border); }
+        .text-sub { color: var(--text-sub); }
+        .accent-bg { background-color: var(--accent); }
+        .accent-bg:hover { background-color: var(--accent-hover); }
+        .accent-light-bg { background-color: var(--accent-light); }
+        .accent-text { color: var(--accent-text); }
+        .input-styled {
+            border-color: var(--border);
+            background-color: var(--card);
+            color: var(--text-main);
+        }
+        .input-styled:focus { border-color: var(--input-focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus) 20%, transparent); }
+        .input-styled::placeholder { color: var(--text-sub); }
+
+        .tab-btn-active { background-color: var(--nav-btn-active) !important; }
+        .tab-btn:hover { background-color: var(--nav-btn-hover) !important; }
+
+        .clock-circle {
+            border-color: var(--clock-border);
+            background-color: var(--clock-bg);
+        }
+        .clock-time { color: var(--clock-text); }
+        .clock-status { color: var(--clock-sub); }
+
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .theme-btn {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .theme-btn:hover { transform: scale(1.15); border-color: white; }
+        .theme-btn.active { border-color: white; box-shadow: 0 0 0 2px rgba(255,255,255,0.5); }
+        .theme-btn-default { background: #6366f1; }
+        .theme-btn-night { background: linear-gradient(135deg, #2e3440, #3b4252); }
+        .theme-btn-pink { background: linear-gradient(135deg, #f9a8d4, #e879a0); }
+
+        .due-badge {
+            font-size: 0.7rem;
+            padding: 1px 8px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .due-overdue { background: #fee2e2; color: #b91c1c; }
+        .due-today { background: #fff7ed; color: #c2410c; }
+        .due-tomorrow { background: #fef9c3; color: #92400e; }
+        .due-soon { background: #f0fdf4; color: #166534; }
+        .due-normal { background: var(--accent-light); color: var(--accent-text); }
+
+        [data-theme="night"] .due-overdue { background: #4a1010; color: #fca5a5; }
+        [data-theme="night"] .due-today { background: #3d1a05; color: #fdba74; }
+        [data-theme="night"] .due-tomorrow { background: #2d1e05; color: #fcd34d; }
+        [data-theme="night"] .due-soon { background: #0f2a14; color: #86efac; }
+        [data-theme="night"] .due-normal { background: var(--accent-light); color: var(--accent-text); }
+
+        [data-theme="night"] .bg-red-50 { background-color: #3a1010 !important; }
+        [data-theme="night"] .bg-amber-50 { background-color: #2d1c08 !important; }
+        [data-theme="night"] .bg-green-50 { background-color: #0f2218 !important; }
+        [data-theme="night"] .border-gray-50 { border-color: #3d2d1f !important; }
+
+        [data-theme="pink"] .bg-red-50 { background-color: #fff0f0 !important; }
+        [data-theme="pink"] .bg-amber-50 { background-color: #fff8ec !important; }
+        [data-theme="pink"] .bg-green-50 { background-color: #f0fff4 !important; }
+
+        /* section heading style */
+        .section-title { color: var(--text-main); }
+        .section-sub { color: var(--text-sub); }
+        .todo-item-title { color: var(--text-main); }
+        .todo-item-priority { color: var(--text-sub); }
+
+        .btn-done {
+            color: var(--btn-done-text);
+            border-color: var(--btn-done-border);
+            background-color: var(--card);
+        }
+        .btn-done:hover { background-color: var(--accent); color: white; border-color: var(--accent); }
+
+        .resource-tag { background-color: var(--accent-light); color: var(--accent-text); }
+        .resource-link { color: var(--accent-text); }
+        .resource-link:hover { color: var(--accent); }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.5);
+            cursor: pointer;
+        }
+        [data-theme="night"] input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8) sepia(1) saturate(3) hue-rotate(330deg);
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
 
     <!-- NAVIGATION BAR -->
-    <nav class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+    <nav class="text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-2">
             <h1 class="text-xl font-bold tracking-wide">🚀 StudentHub</h1>
-            <div class="flex space-x-2">
-                <button onclick="switchTab('todo-tab')" class="tab-btn px-3 py-1.5 rounded-md bg-indigo-700 font-medium transition">📋 รายการงาน</button>
-                <button onclick="switchTab('pomodoro-tab')" class="tab-btn px-3 py-1.5 rounded-md hover:bg-indigo-500 font-medium transition">⏱️ จับเวลา</button>
-                <button onclick="switchTab('share-tab')" class="tab-btn px-3 py-1.5 rounded-md hover:bg-indigo-500 font-medium transition">📚 คลังสรุปบทเรียน</button>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="switchTab('todo-tab', this)" class="tab-btn tab-btn-active px-3 py-1.5 rounded-md font-medium transition text-white">📋 รายการงาน</button>
+                <button onclick="switchTab('pomodoro-tab', this)" class="tab-btn px-3 py-1.5 rounded-md font-medium transition text-white">⏱️ จับเวลา</button>
+                <button onclick="switchTab('share-tab', this)" class="tab-btn px-3 py-1.5 rounded-md font-medium transition text-white">📚 คลังสรุปบทเรียน</button>
+                <!-- Theme Switcher -->
+                <div class="theme-switcher ml-2">
+                    <span class="text-xs text-white opacity-70">ธีม:</span>
+                    <button class="theme-btn theme-btn-default active" onclick="setTheme('default', this)" title="ธีมปกติ (Indigo)"></button>
+                    <button class="theme-btn theme-btn-night" onclick="setTheme('night', this)" title="Night Light"></button>
+                    <button class="theme-btn theme-btn-pink" onclick="setTheme('pink', this)" title="ชมพูพาสเทล"></button>
+                </div>
             </div>
         </div>
     </nav>
@@ -30,57 +201,58 @@
 
         <!-- ================= TAB 1: TODO & SMART ALERT ================= -->
         <section id="todo-tab" class="tab-content block">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">📋 ระบบจัดการงานและตารางสอบ</h2>
-                <p class="text-gray-500 text-sm mb-4">จัดลำดับความสำคัญของงานด้วยระบบสีแจ้งเตือนความเร่งด่วน</p>
+            <div class="card p-6 rounded-xl shadow-sm border mb-6">
+                <h2 class="text-2xl font-bold section-title mb-2">📋 ระบบจัดการงานและตารางสอบ</h2>
+                <p class="section-sub text-sm mb-4">จัดลำดับความสำคัญของงานด้วยระบบสีแจ้งเตือนความเร่งด่วน</p>
                 
                 <!-- ฟอร์มเพิ่มงาน -->
-                <form id="todo-form" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <form id="todo-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input type="text" id="task-title" placeholder="ชื่อวิชา หรือชื่องาน (เช่น การบ้านฟิสิกส์)" required 
-                           class="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none col-span-1 md:col-span-1">
-                    <select id="task-priority" class="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                           class="input-styled border p-2 rounded-lg focus:outline-none col-span-1">
+                    <select id="task-priority" class="input-styled border p-2 rounded-lg focus:outline-none">
                         <option value="high">🔴 เร่งด่วน (ส่งหรือสอบภายใน 1-2 วัน)</option>
                         <option value="medium" selected>🟡 ปานกลาง (ส่งหรือสอบในสัปดาห์นี้)</option>
                         <option value="low">🟢 ระยะยาว (สัปดาห์หน้าเป็นต้นไป)</option>
                     </select>
-                    <button type="submit" class="bg-indigo-600 text-white font-medium p-2 rounded-lg hover:bg-indigo-700 transition">
+                    <div class="flex items-center gap-2 col-span-1 md:col-span-1">
+                        <label class="text-sm section-sub shrink-0">📅 วันที่ส่ง/สอบ:</label>
+                        <input type="date" id="task-due" 
+                               class="input-styled border p-2 rounded-lg focus:outline-none flex-1 text-sm">
+                    </div>
+                    <button type="submit" class="accent-bg text-white font-medium p-2 rounded-lg transition col-span-1 md:col-span-1">
                         เพิ่มรายการงาน
                     </button>
                 </form>
             </div>
 
             <!-- รายการงานที่แสดงผล -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h3 class="text-lg font-bold mb-4 text-gray-700">📌 งานที่กำลังรอดำเนินการ</h3>
-                <div id="todo-list" class="space-y-3">
-                    <!-- ข้อมูลจาก JS จะมาเรนเดอร์ตรงนี้ -->
-                </div>
+            <div class="card p-6 rounded-xl shadow-sm border">
+                <h3 class="text-lg font-bold mb-4 section-title">📌 งานที่กำลังรอดำเนินการ</h3>
+                <div id="todo-list" class="space-y-3"></div>
             </div>
         </section>
 
 
         <!-- ================= TAB 2: POMODORO TIMER ================= -->
         <section id="pomodoro-tab" class="tab-content hidden">
-            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center max-w-md mx-auto">
-                <h2 class="text-2xl font-bold text-gray-900 mb-1">⏱️ Focus Timer for reading (เทคนิค Pomodoro)</h2>
-                <p class="text-gray-500 text-sm mb-6">ฝึกสมาธิ: โฟกัส 25 นาที พักผ่อน 5 นาที</p>
+            <div class="card p-8 rounded-xl shadow-sm border text-center max-w-md mx-auto">
+                <h2 class="text-2xl font-bold section-title mb-1">⏱️ Focus Timer (เทคนิค Pomodoro)</h2>
+                <p class="section-sub text-sm mb-6">ฝึกสมาธิ: โฟกัส 25 นาที พักผ่อน 5 นาที</p>
 
-                <!-- หน้าปัดนาฬิกา -->
-                <div class="w-64 h-64 mx-auto flex flex-col justify-center items-center border-8 border-indigo-100 rounded-full bg-indigo-50 mb-6">
-                    <span id="timer-display" class="text-5xl font-bold text-indigo-600 tracking-wider">25:00</span>
-                    <span id="timer-status" class="text-sm font-medium text-indigo-400 mt-2">ได้เวลาลุยแล้ว!</span>
+                <div class="clock-circle w-64 h-64 mx-auto flex flex-col justify-center items-center border-8 rounded-full mb-6">
+                    <span id="timer-display" class="clock-time text-5xl font-bold tracking-wider">25:00</span>
+                    <span id="timer-status" class="clock-status text-sm font-medium mt-2">ได้เวลาลุยแล้ว!</span>
                 </div>
 
-                <!-- ปุ่มควบคุม -->
                 <div class="flex justify-center space-x-3 mb-6">
                     <button id="start-btn" onclick="startTimer()" class="bg-emerald-500 text-white px-6 py-2 rounded-full font-medium hover:bg-emerald-600 transition shadow-sm">เริ่มโฟกัส</button>
                     <button id="pause-btn" onclick="pauseTimer()" class="bg-amber-500 text-white px-6 py-2 rounded-full font-medium hover:bg-amber-600 transition shadow-sm hidden">พักชั่วคราว</button>
                     <button onclick="resetTimer()" class="bg-gray-200 text-gray-600 px-6 py-2 rounded-full font-medium hover:bg-gray-300 transition">รีเซ็ต</button>
                 </div>
 
-                <div class="border-t pt-4 text-left">
-                    <p class="text-sm text-gray-600 font-medium">🔥 สถิติการสะสมแต้มความสำเร็จในเซสชันนี้:</p>
-                    <p class="text-xs text-gray-400 mt-1">คุณทำภารกิจสำเร็จไปแล้ว: <span id="pomodoro-count" class="text-indigo-600 font-bold text-sm">0</span> รอบ (Tomatoes)</p>
+                <div class="border-t pt-4 text-left" style="border-color: var(--border);">
+                    <p class="text-sm font-medium section-title">🔥 สถิติการสะสมแต้มความสำเร็จในเซสชันนี้:</p>
+                    <p class="text-xs section-sub mt-1">คุณทำภารกิจสำเร็จไปแล้ว: <span id="pomodoro-count" class="accent-text font-bold text-sm">0</span> รอบ (Tomatoes)</p>
                 </div>
             </div>
         </section>
@@ -88,16 +260,15 @@
 
         <!-- ================= TAB 3: RESOURCE SHARING ================= -->
         <section id="share-tab" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">📚 คลังแบ่งปันสรุปบทเรียน (Peer-to-Peer)</h2>
-                <p class="text-gray-500 text-sm mb-4">แปะลิงก์สรุป หรือคลิปติวใน YouTube เพื่อช่วยกันเรียนกับเพื่อนๆ</p>
+            <div class="card p-6 rounded-xl shadow-sm border mb-6">
+                <h2 class="text-2xl font-bold section-title mb-2">📚 คลังแบ่งปันสรุปบทเรียน (Peer-to-Peer)</h2>
+                <p class="section-sub text-sm mb-4">แปะลิงก์สรุป หรือคลิปติวใน YouTube เพื่อช่วยกันเรียนกับเพื่อนๆ</p>
 
-                <!-- ฟอร์มแชร์ลิงก์ -->
                 <form id="share-form" class="space-y-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input type="text" id="share-title" placeholder="หัวข้อสรุป (เช่น สรุปสูตรเคมี ม.4 เทอม 1)" required
-                               class="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        <select id="share-subject" class="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                               class="input-styled border p-2 rounded-lg focus:outline-none">
+                        <select id="share-subject" class="input-styled border p-2 rounded-lg focus:outline-none">
                             <option value="คณิตศาสตร์">📐 คณิตศาสตร์</option>
                             <option value="ฟิสิกส์">⚡ ฟิสิกส์</option>
                             <option value="เคมี">🧪 เคมี</option>
@@ -107,38 +278,66 @@
                     </div>
                     <div class="flex gap-2">
                         <input type="url" id="share-url" placeholder="วาง URL ลิงก์ที่นี่ (Google Drive, YouTube, Canva ฯลฯ)" required
-                               class="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none flex-grow">
-                        <button type="submit" class="bg-indigo-600 text-white font-medium px-6 rounded-lg hover:bg-indigo-700 transition shrink-0">
+                               class="input-styled border p-2 rounded-lg focus:outline-none flex-grow">
+                        <button type="submit" class="accent-bg text-white font-medium px-6 rounded-lg transition shrink-0">
                             🚀 โพสต์แชร์
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- บอร์ดแสดงสรุปบทเรียน -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="resource-board">
-                <!-- ข้อมูลจาก JS จะถูกนำมาใส่ตรงนี้ -->
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="resource-board"></div>
         </section>
 
     </main>
 
-    <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // --- 1. ระบบเปลี่ยนแท็บ (Tab Switching) ---
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-            
-            // เปลี่ยนสีปุ่มเมนูให้รู้ว่าอยู่แท็บไหน
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-indigo-700', 'hover:bg-indigo-500');
-                btn.classList.add('hover:bg-indigo-500');
-            });
-            event.currentTarget.classList.add('bg-indigo-700');
+        // --- THEME ---
+        function setTheme(theme, btn) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('student_theme', theme);
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
         }
 
-        // --- 2. ระบบจัดการงาน (To-Do List เปล่า สะอาด 100%) ---
+        // Load saved theme
+        (function() {
+            const saved = localStorage.getItem('student_theme') || 'default';
+            document.documentElement.setAttribute('data-theme', saved);
+            const btnMap = { default: 0, night: 1, pink: 2 };
+            const btns = document.querySelectorAll('.theme-btn');
+            if (btns[btnMap[saved]]) btns[btnMap[saved]].classList.add('active');
+            else btns[0].classList.add('active');
+        })();
+
+        // --- TAB SWITCHING ---
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-btn-active'));
+            if (btn) btn.classList.add('tab-btn-active');
+        }
+
+        // --- DUE DATE HELPER ---
+        function getDueBadge(dueDate) {
+            if (!dueDate) return '';
+            const today = new Date(); today.setHours(0,0,0,0);
+            const due = new Date(dueDate); due.setHours(0,0,0,0);
+            const diff = Math.round((due - today) / (1000*60*60*24));
+            let cls, label;
+            if (diff < 0) { cls = 'due-overdue'; label = `⚠️ เลยกำหนด ${Math.abs(diff)} วัน`; }
+            else if (diff === 0) { cls = 'due-today'; label = '🔥 ส่งวันนี้!'; }
+            else if (diff === 1) { cls = 'due-tomorrow'; label = '⏰ พรุ่งนี้'; }
+            else if (diff <= 7) { cls = 'due-soon'; label = `📅 อีก ${diff} วัน`; }
+            else {
+                const d = new Date(dueDate);
+                label = `📅 ${d.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'})}`;
+                cls = 'due-normal';
+            }
+            return `<span class="due-badge ${cls}">${label}</span>`;
+        }
+
+        // --- TODO LIST ---
         let todos = JSON.parse(localStorage.getItem('student_todos')) || [];
 
         const todoForm = document.getElementById('todo-form');
@@ -147,10 +346,9 @@
         function renderTodos() {
             todoList.innerHTML = '';
             if (todos.length === 0) {
-                todoList.innerHTML = `<p class="text-gray-400 text-center py-6 text-sm">ไม่มีงานค้างในระบบแล้ว ลองเพิ่มงานใหม่ด้านบนได้เลย</p>`;
+                todoList.innerHTML = `<p class="section-sub text-center py-6 text-sm">ไม่มีงานค้างในระบบแล้ว ลองเพิ่มงานใหม่ด้านบนได้เลย</p>`;
                 return;
             }
-
             todos.forEach(todo => {
                 let colorClass = '';
                 let textPriority = '';
@@ -158,14 +356,19 @@
                 else if (todo.priority === 'medium') { colorClass = 'border-l-4 border-amber-500 bg-amber-50'; textPriority = '🟡 ปานกลาง'; }
                 else { colorClass = 'border-l-4 border-green-500 bg-green-50'; textPriority = '🟢 ระยะยาว'; }
 
+                const dueBadge = getDueBadge(todo.dueDate);
+
                 const div = document.createElement('div');
                 div.className = `flex justify-between items-center p-3 rounded-lg shadow-sm ${colorClass}`;
                 div.innerHTML = `
-                    <div>
-                        <p class="font-medium text-gray-800">${todo.title}</p>
-                        <span class="text-xs font-semibold text-gray-500">${textPriority}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium todo-item-title">${todo.title}</p>
+                        <div class="flex items-center gap-2 flex-wrap mt-1">
+                            <span class="text-xs font-semibold todo-item-priority">${textPriority}</span>
+                            ${dueBadge}
+                        </div>
                     </div>
-                    <button onclick="deleteTodo(${todo.id})" class="text-xs bg-white text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-md hover:bg-emerald-600 hover:text-white transition font-medium shadow-sm">
+                    <button onclick="deleteTodo(${todo.id})" class="btn-done ml-3 shrink-0 text-xs border px-3 py-1.5 rounded-md transition font-medium shadow-sm">
                         ✓ เสร็จแล้ว
                     </button>
                 `;
@@ -178,7 +381,8 @@
             e.preventDefault();
             const title = document.getElementById('task-title').value;
             const priority = document.getElementById('task-priority').value;
-            todos.push({ id: Date.now(), title, priority });
+            const dueDate = document.getElementById('task-due').value;
+            todos.push({ id: Date.now(), title, priority, dueDate });
             renderTodos();
             todoForm.reset();
         });
@@ -188,9 +392,9 @@
             renderTodos();
         }
 
-        // --- 3. ระบบจับเวลา POMODORO TIMER ---
+        // --- POMODORO TIMER ---
         let timer;
-        let timeLeft = 25 * 60; 
+        let timeLeft = 25 * 60;
         let isRunning = false;
         let isWorkSession = true;
         let completedSessions = 0;
@@ -212,7 +416,6 @@
             isRunning = true;
             startBtn.classList.add('hidden');
             pauseBtn.classList.remove('hidden');
-
             timer = setInterval(() => {
                 if (timeLeft > 0) {
                     timeLeft--;
@@ -222,7 +425,6 @@
                     isRunning = false;
                     startBtn.classList.remove('hidden');
                     pauseBtn.classList.add('hidden');
-                    
                     if (isWorkSession) {
                         completedSessions++;
                         pomodoroCount.textContent = completedSessions;
@@ -259,7 +461,7 @@
             updateTimerDisplay();
         }
 
-        // --- 4. ระบบบอร์ดแชร์ข้อมูล (Resource Board เปล่า สะอาด 100%) ---
+        // --- RESOURCE BOARD ---
         let resources = JSON.parse(localStorage.getItem('student_resources')) || [];
 
         const shareForm = document.getElementById('share-form');
@@ -269,21 +471,20 @@
             resourceBoard.innerHTML = '';
             if (resources.length === 0) {
                 resourceBoard.className = "block text-center py-8";
-                resourceBoard.innerHTML = `<p class="text-gray-400 text-sm">ยังไม่มีข้อมูลสรุปบทเรียนในคลัง ลองแชร์ลิงก์แรกของห้องเรียนด้านบนได้เลย! 📑</p>`;
+                resourceBoard.innerHTML = `<p class="section-sub text-sm">ยังไม่มีข้อมูลสรุปบทเรียนในคลัง ลองแชร์ลิงก์แรกของห้องเรียนด้านบนได้เลย! 📑</p>`;
                 return;
             }
-
             resourceBoard.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
             resources.forEach(res => {
                 const div = document.createElement('div');
-                div.className = 'bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between';
+                div.className = 'card p-5 rounded-xl shadow-sm border flex flex-col justify-between';
                 div.innerHTML = `
                     <div>
-                        <span class="inline-block px-2.5 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-full mb-2">${res.subject}</span>
-                        <h4 class="font-bold text-gray-800 text-base mb-2">${res.title}</h4>
+                        <span class="resource-tag inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full mb-2">${res.subject}</span>
+                        <h4 class="font-bold section-title text-base mb-2">${res.title}</h4>
                     </div>
-                    <div class="mt-4 pt-3 border-t border-gray-50 flex justify-between items-center">
-                        <a href="${res.url}" target="_blank" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: var(--border);">
+                        <a href="${res.url}" target="_blank" class="resource-link text-sm font-medium flex items-center gap-1">
                             🔗 เปิดลิงก์สรุปข้อมูล
                         </a>
                         <button onclick="deleteResource(${res.id})" class="text-xs text-red-400 hover:text-red-600 transition">ลบ</button>
@@ -311,7 +512,6 @@
             }
         }
 
-        // เริ่มต้นเรนเดอร์ข้อมูลหน้าเว็บครั้งแรกเมื่อโหลดหน้าเว็บ
         renderTodos();
         renderResources();
     </script>
