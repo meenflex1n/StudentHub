@@ -150,7 +150,6 @@
         [data-theme="pink"] .bg-amber-50 { background-color: #fff8ec !important; }
         [data-theme="pink"] .bg-green-50 { background-color: #f0fff4 !important; }
 
-        /* section heading style */
         .section-title { color: var(--text-main); }
         .section-sub { color: var(--text-sub); }
         .todo-item-title { color: var(--text-main); }
@@ -175,7 +174,6 @@
             filter: invert(0.8) sepia(1) saturate(3) hue-rotate(330deg);
         }
 
-        /* file attach styles */
         .file-drop {
             border: 2px dashed var(--border);
             border-radius: 0.75rem;
@@ -250,7 +248,6 @@
                 <h2 class="text-2xl font-bold section-title mb-2">📋 ระบบจัดการงานและตารางสอบ</h2>
                 <p class="section-sub text-sm mb-4">จัดลำดับความสำคัญของงานด้วยระบบสีแจ้งเตือนความเร่งด่วน</p>
                 
-                <!-- ฟอร์มเพิ่มงาน -->
                 <form id="todo-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input type="text" id="task-title" placeholder="ชื่อวิชา หรือชื่องาน (เช่น การบ้านฟิสิกส์)" required 
                            class="input-styled border p-2 rounded-lg focus:outline-none col-span-1">
@@ -270,7 +267,6 @@
                 </form>
             </div>
 
-            <!-- รายการงานที่แสดงผล -->
             <div class="card p-6 rounded-xl shadow-sm border">
                 <h3 class="text-lg font-bold mb-4 section-title">📌 งานที่กำลังรอดำเนินการ</h3>
                 <div id="todo-list" class="space-y-3"></div>
@@ -308,7 +304,6 @@
             <div class="card p-6 rounded-xl shadow-sm border mb-6">
                 <h2 class="text-2xl font-bold section-title mb-2">📚 คลังแบ่งปันสรุปบทเรียน (Peer-to-Peer)</h2>
                 <p class="section-sub text-sm mb-1">แปะลิงก์สรุป หรือแนบไฟล์รูปภาพ/PDF/เอกสารโดยตรง เพื่อช่วยกันเรียนกับเพื่อนๆ</p>
-                <p class="section-sub text-xs mb-4">⚠️ ไฟล์และลิงก์ที่แชร์ในหน้านี้จะมองเห็นได้โดยทุกคนที่เปิดหน้านี้ (พื้นที่ส่วนกลางของห้อง)</p>
 
                 <form id="share-form" class="space-y-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -347,30 +342,26 @@
     </main>
 
     <script>
-        // --- STORAGE HELPERS (persistent, replaces localStorage) ---
-        // Personal data (per user): theme preference, todo list
-        // Shared data (visible to everyone using this page): resource board + attached files
-        async function storageGet(key, shared) {
+        // --- STORAGE HELPERS (Standard LocalStorage Implementation) ---
+        async function storageGet(key) {
             try {
-                const result = await window.storage.get(key, shared);
-                return result ? result.value : null;
+                return localStorage.getItem(key);
             } catch (e) {
-                return null; // key not found or storage error
-            }
-        }
-        async function storageSet(key, value, shared) {
-            try {
-                const result = await window.storage.set(key, value, shared);
-                if (!result) console.error('Storage set failed for', key);
-                return result;
-            } catch (e) {
-                console.error('Storage error saving', key, e);
                 return null;
             }
         }
-        async function storageDelete(key, shared) {
+        async function storageSet(key, value) {
             try {
-                await window.storage.delete(key, shared);
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                console.error('Storage error saving', key, e);
+                return false;
+            }
+        }
+        async function storageDelete(key) {
+            try {
+                localStorage.removeItem(key);
             } catch (e) {
                 console.error('Storage error deleting', key, e);
             }
@@ -381,11 +372,11 @@
             document.documentElement.setAttribute('data-theme', theme);
             document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
-            await storageSet('theme', theme, false);
+            await storageSet('theme', theme);
         }
 
         async function loadTheme() {
-            const saved = (await storageGet('theme', false)) || 'default';
+            const saved = (await storageGet('theme')) || 'default';
             document.documentElement.setAttribute('data-theme', saved);
             const btnMap = { default: 0, night: 1, pink: 2 };
             const btns = document.querySelectorAll('.theme-btn');
@@ -420,9 +411,8 @@
             return `<span class="due-badge ${cls}">${label}</span>`;
         }
 
-        // --- TODO LIST (personal) ---
+        // --- TODO LIST ---
         let todos = [];
-
         const todoForm = document.getElementById('todo-form');
         const todoList = document.getElementById('todo-list');
 
@@ -460,11 +450,11 @@
         }
 
         async function saveTodos() {
-            await storageSet('todos', JSON.stringify(todos), false);
+            await storageSet('todos', JSON.stringify(todos));
         }
 
         async function loadTodos() {
-            const raw = await storageGet('todos', false);
+            const raw = await storageGet('todos');
             todos = raw ? JSON.parse(raw) : [];
             renderTodos();
         }
@@ -480,13 +470,13 @@
             await saveTodos();
         });
 
-        async function deleteTodo(id) {
+        window.deleteTodo = async function(id) {
             todos = todos.filter(t => t.id !== id);
             renderTodos();
             await saveTodos();
         }
 
-        // --- POMODORO TIMER (in-memory only, resets each visit) ---
+        // --- POMODORO TIMER ---
         let timer;
         let timeLeft = 25 * 60;
         let isRunning = false;
@@ -555,12 +545,10 @@
             updateTimerDisplay();
         }
 
-        // --- RESOURCE BOARD (shared across everyone using this page) ---
-        // Metadata list stays small; large file bytes are stored under their own key
-        // (file:<id>) and only fetched when someone opens/deletes that specific item.
-        const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3MB raw file cap
+        // --- RESOURCE BOARD ---
+        const MAX_FILE_BYTES = 3 * 1024 * 1024;
         let resources = [];
-        let pendingFile = null; // { dataUrl, name, mime, category }
+        let pendingFile = null;
 
         const shareForm = document.getElementById('share-form');
         const resourceBoard = document.getElementById('resource-board');
@@ -673,12 +661,12 @@
         }
 
         async function saveResourceIndex() {
-            await storageSet('resources', JSON.stringify(resources), true);
+            await storageSet('resources', JSON.stringify(resources));
         }
 
         async function loadResources() {
             resourceBoard.innerHTML = resourceCardSkeleton(2);
-            const raw = await storageGet('resources', true);
+            const raw = await storageGet('resources');
             resources = raw ? JSON.parse(raw) : [];
             renderResources();
         }
@@ -702,7 +690,7 @@
 
             try {
                 if (pendingFile) {
-                    const saved = await storageSet('file:' + id, pendingFile.dataUrl, true);
+                    const saved = await storageSet('file:' + id, pendingFile.dataUrl);
                     if (!saved) throw new Error('บันทึกไฟล์ไม่สำเร็จ');
                     newRes.hasFile = true;
                     newRes.fileName = pendingFile.name;
@@ -724,8 +712,8 @@
             }
         });
 
-        async function viewFile(id) {
-            const dataUrl = await storageGet('file:' + id, true);
+        window.viewFile = async function(id) {
+            const dataUrl = await storageGet('file:' + id);
             if (!dataUrl) { alert('ไม่พบไฟล์ที่แนบไว้ อาจถูกลบไปแล้ว'); return; }
             const win = window.open('', '_blank');
             if (!win) { alert('เบราว์เซอร์บล็อกป๊อปอัป กรุณาอนุญาตเพื่อดูไฟล์'); return; }
@@ -738,14 +726,14 @@
             }
         }
 
-        async function deleteResource(id) {
+        window.deleteResource = async function(id) {
             if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
             const res = resources.find(r => r.id === id);
             resources = resources.filter(r => r.id !== id);
             renderResources();
             await saveResourceIndex();
             if (res && res.hasFile) {
-                await storageDelete('file:' + id, true);
+                await storageDelete('file:' + id);
             }
         }
 
