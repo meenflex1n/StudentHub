@@ -342,29 +342,15 @@
     </main>
 
     <script>
-        // --- STORAGE HELPERS (Standard LocalStorage Implementation) ---
+        // --- STORAGE HELPERS ---
         async function storageGet(key) {
-            try {
-                return localStorage.getItem(key);
-            } catch (e) {
-                return null;
-            }
+            try { return localStorage.getItem(key); } catch (e) { return null; }
         }
         async function storageSet(key, value) {
-            try {
-                localStorage.setItem(key, value);
-                return true;
-            } catch (e) {
-                console.error('Storage error saving', key, e);
-                return false;
-            }
+            try { localStorage.setItem(key, value); return true; } catch (e) { console.error('Storage error saving', key, e); return false; }
         }
         async function storageDelete(key) {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.error('Storage error deleting', key, e);
-            }
+            try { localStorage.removeItem(key); } catch (e) { console.error('Storage error deleting', key, e); }
         }
 
         // --- THEME ---
@@ -415,6 +401,12 @@
         let todos = [];
         const todoForm = document.getElementById('todo-form');
         const todoList = document.getElementById('todo-list');
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str == null ? '' : str;
+            return d.innerHTML;
+        }
 
         function renderTodos() {
             todoList.innerHTML = '';
@@ -470,14 +462,15 @@
             await saveTodos();
         });
 
+        // FIXED: Convert id to Number for strict comparison
         window.deleteTodo = async function(id) {
-            todos = todos.filter(t => t.id !== id);
+            todos = todos.filter(t => t.id !== Number(id));
             renderTodos();
             await saveTodos();
-        }
+        };
 
         // --- POMODORO TIMER ---
-        let timer;
+        let timer = null;
         let timeLeft = 25 * 60;
         let isRunning = false;
         let isWorkSession = true;
@@ -495,11 +488,13 @@
             timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
+        // FIXED: Clear interval check to avoid overlapping timers
         function startTimer() {
             if (isRunning) return;
             isRunning = true;
             startBtn.classList.add('hidden');
             pauseBtn.classList.remove('hidden');
+            if (timer) clearInterval(timer);
             timer = setInterval(() => {
                 if (timeLeft > 0) {
                     timeLeft--;
@@ -555,12 +550,6 @@
         const shareFileInput = document.getElementById('share-file');
         const filePreviewBox = document.getElementById('file-preview');
         const shareSubmitBtn = document.getElementById('share-submit-btn');
-
-        function escapeHtml(str) {
-            const d = document.createElement('div');
-            d.textContent = str == null ? '' : str;
-            return d.innerHTML;
-        }
 
         function fileCategory(mime, name) {
             if (mime && mime.startsWith('image/')) return 'image';
@@ -724,18 +713,19 @@
             } else {
                 win.location.href = dataUrl;
             }
-        }
+        };
 
         window.removeItem = async function(id) {
-    if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
-    const res = resources.find(r => r.id === id);
-    resources = resources.filter(r => r.id !== id);
-    renderResources();
-    await saveResourceIndex();
-    if (res && res.hasFile) {
-        await storageDelete('file:' + id);
-    }
-}
+            if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
+            const res = resources.find(r => r.id === id);
+            resources = resources.filter(r => r.id !== id);
+            renderResources();
+            await saveResourceIndex();
+            if (res && res.hasFile) {
+                await storageDelete('file:' + id);
+            }
+        };
+
         // --- INIT ---
         (async function init() {
             await Promise.all([loadTheme(), loadTodos(), loadResources()]);
