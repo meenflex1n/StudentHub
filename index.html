@@ -653,7 +653,7 @@
                             ${urlAction}
                             ${fileAction}
                         </div>
-                        <button onclick="deleteResource('${res.id}')" class="text-xs text-red-400 hover:text-red-600 transition">ลบ</button>
+                        <button onclick="removeItem('${res.id}')" class="text-xs text-red-400 hover:text-red-600 transition">ลบ</button>
                     </div>
                 `;
                 resourceBoard.appendChild(div);
@@ -726,17 +726,16 @@
             }
         }
 
-        window.deleteResource = async function(id) {
-            if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
-            const res = resources.find(r => r.id === id);
-            resources = resources.filter(r => r.id !== id);
-            renderResources();
-            await saveResourceIndex();
-            if (res && res.hasFile) {
-                await storageDelete('file:' + id);
-            }
-        }
-
+        window.removeItem = async function(id) {
+    if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
+    const res = resources.find(r => r.id === id);
+    resources = resources.filter(r => r.id !== id);
+    renderResources();
+    await saveResourceIndex();
+    if (res && res.hasFile) {
+        await storageDelete('file:' + id);
+    }
+}
         // --- INIT ---
         (async function init() {
             await Promise.all([loadTheme(), loadTodos(), loadResources()]);
