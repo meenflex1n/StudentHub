@@ -174,6 +174,51 @@
         [data-theme="night"] input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(0.8) sepia(1) saturate(3) hue-rotate(330deg);
         }
+
+        /* file attach styles */
+        .file-drop {
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 0.6rem;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            background-color: var(--card);
+        }
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background-color: var(--accent-light);
+            color: var(--accent-text);
+            font-weight: 600;
+        }
+        .thumb-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--accent-light);
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .skeleton {
+            background: var(--accent-light);
+            border-radius: 0.5rem;
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -262,7 +307,8 @@
         <section id="share-tab" class="tab-content hidden">
             <div class="card p-6 rounded-xl shadow-sm border mb-6">
                 <h2 class="text-2xl font-bold section-title mb-2">📚 คลังแบ่งปันสรุปบทเรียน (Peer-to-Peer)</h2>
-                <p class="section-sub text-sm mb-4">แปะลิงก์สรุป หรือคลิปติวใน YouTube เพื่อช่วยกันเรียนกับเพื่อนๆ</p>
+                <p class="section-sub text-sm mb-1">แปะลิงก์สรุป หรือแนบไฟล์รูปภาพ/PDF/เอกสารโดยตรง เพื่อช่วยกันเรียนกับเพื่อนๆ</p>
+                <p class="section-sub text-xs mb-4">⚠️ ไฟล์และลิงก์ที่แชร์ในหน้านี้จะมองเห็นได้โดยทุกคนที่เปิดหน้านี้ (พื้นที่ส่วนกลางของห้อง)</p>
 
                 <form id="share-form" class="space-y-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -276,39 +322,76 @@
                             <option value="ทั่วไป">📝 วิชาอื่นๆ / ทั่วไป</option>
                         </select>
                     </div>
-                    <div class="flex gap-2">
-                        <input type="url" id="share-url" placeholder="วาง URL ลิงก์ที่นี่ (Google Drive, YouTube, Canva ฯลฯ)" required
-                               class="input-styled border p-2 rounded-lg focus:outline-none flex-grow">
-                        <button type="submit" class="accent-bg text-white font-medium px-6 rounded-lg transition shrink-0">
-                            🚀 โพสต์แชร์
-                        </button>
+                    <input type="url" id="share-url" placeholder="วาง URL ลิงก์ที่นี่ (Google Drive, YouTube, Canva ฯลฯ) — ไม่บังคับถ้ามีไฟล์แนบ"
+                           class="input-styled border p-2 rounded-lg focus:outline-none w-full">
+
+                    <div>
+                        <label class="text-sm section-sub block mb-1">📎 หรือแนบไฟล์โดยตรง (รูปภาพ / PDF / เอกสาร) — ไม่บังคับถ้ามีลิงก์</label>
+                        <input type="file" id="share-file" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                               class="file-drop w-full">
+                        <p class="text-xs section-sub mt-1">รองรับไฟล์ขนาดไม่เกิน 3MB — ถ้าไฟล์ใหญ่กว่านี้ แนะนำให้อัปโหลดขึ้น Google Drive แล้ววางลิงก์แทน</p>
+                        <div id="file-preview" class="hidden mt-2"></div>
                     </div>
+
+                    <button type="submit" id="share-submit-btn" class="accent-bg text-white font-medium px-6 py-2 rounded-lg transition w-full md:w-auto">
+                        🚀 โพสต์แชร์
+                    </button>
                 </form>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="resource-board"></div>
+            <div id="resource-board" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p class="section-sub text-sm col-span-2 text-center py-6"><span class="spinner"></span> กำลังโหลดคลังสรุปบทเรียน...</p>
+            </div>
         </section>
 
     </main>
 
     <script>
-        // --- THEME ---
-        function setTheme(theme, btn) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('student_theme', theme);
-            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
+        // --- STORAGE HELPERS (persistent, replaces localStorage) ---
+        // Personal data (per user): theme preference, todo list
+        // Shared data (visible to everyone using this page): resource board + attached files
+        async function storageGet(key, shared) {
+            try {
+                const result = await window.storage.get(key, shared);
+                return result ? result.value : null;
+            } catch (e) {
+                return null; // key not found or storage error
+            }
+        }
+        async function storageSet(key, value, shared) {
+            try {
+                const result = await window.storage.set(key, value, shared);
+                if (!result) console.error('Storage set failed for', key);
+                return result;
+            } catch (e) {
+                console.error('Storage error saving', key, e);
+                return null;
+            }
+        }
+        async function storageDelete(key, shared) {
+            try {
+                await window.storage.delete(key, shared);
+            } catch (e) {
+                console.error('Storage error deleting', key, e);
+            }
         }
 
-        // Load saved theme
-        (function() {
-            const saved = localStorage.getItem('student_theme') || 'default';
+        // --- THEME ---
+        async function setTheme(theme, btn) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            await storageSet('theme', theme, false);
+        }
+
+        async function loadTheme() {
+            const saved = (await storageGet('theme', false)) || 'default';
             document.documentElement.setAttribute('data-theme', saved);
             const btnMap = { default: 0, night: 1, pink: 2 };
             const btns = document.querySelectorAll('.theme-btn');
             if (btns[btnMap[saved]]) btns[btnMap[saved]].classList.add('active');
             else btns[0].classList.add('active');
-        })();
+        }
 
         // --- TAB SWITCHING ---
         function switchTab(tabId, btn) {
@@ -337,8 +420,8 @@
             return `<span class="due-badge ${cls}">${label}</span>`;
         }
 
-        // --- TODO LIST ---
-        let todos = JSON.parse(localStorage.getItem('student_todos')) || [];
+        // --- TODO LIST (personal) ---
+        let todos = [];
 
         const todoForm = document.getElementById('todo-form');
         const todoList = document.getElementById('todo-list');
@@ -362,7 +445,7 @@
                 div.className = `flex justify-between items-center p-3 rounded-lg shadow-sm ${colorClass}`;
                 div.innerHTML = `
                     <div class="flex-1 min-w-0">
-                        <p class="font-medium todo-item-title">${todo.title}</p>
+                        <p class="font-medium todo-item-title">${escapeHtml(todo.title)}</p>
                         <div class="flex items-center gap-2 flex-wrap mt-1">
                             <span class="text-xs font-semibold todo-item-priority">${textPriority}</span>
                             ${dueBadge}
@@ -374,10 +457,19 @@
                 `;
                 todoList.appendChild(div);
             });
-            localStorage.setItem('student_todos', JSON.stringify(todos));
         }
 
-        todoForm.addEventListener('submit', (e) => {
+        async function saveTodos() {
+            await storageSet('todos', JSON.stringify(todos), false);
+        }
+
+        async function loadTodos() {
+            const raw = await storageGet('todos', false);
+            todos = raw ? JSON.parse(raw) : [];
+            renderTodos();
+        }
+
+        todoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = document.getElementById('task-title').value;
             const priority = document.getElementById('task-priority').value;
@@ -385,14 +477,16 @@
             todos.push({ id: Date.now(), title, priority, dueDate });
             renderTodos();
             todoForm.reset();
+            await saveTodos();
         });
 
-        function deleteTodo(id) {
+        async function deleteTodo(id) {
             todos = todos.filter(t => t.id !== id);
             renderTodos();
+            await saveTodos();
         }
 
-        // --- POMODORO TIMER ---
+        // --- POMODORO TIMER (in-memory only, resets each visit) ---
         let timer;
         let timeLeft = 25 * 60;
         let isRunning = false;
@@ -461,59 +555,204 @@
             updateTimerDisplay();
         }
 
-        // --- RESOURCE BOARD ---
-        let resources = JSON.parse(localStorage.getItem('student_resources')) || [];
+        // --- RESOURCE BOARD (shared across everyone using this page) ---
+        // Metadata list stays small; large file bytes are stored under their own key
+        // (file:<id>) and only fetched when someone opens/deletes that specific item.
+        const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3MB raw file cap
+        let resources = [];
+        let pendingFile = null; // { dataUrl, name, mime, category }
 
         const shareForm = document.getElementById('share-form');
         const resourceBoard = document.getElementById('resource-board');
+        const shareFileInput = document.getElementById('share-file');
+        const filePreviewBox = document.getElementById('file-preview');
+        const shareSubmitBtn = document.getElementById('share-submit-btn');
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str == null ? '' : str;
+            return d.innerHTML;
+        }
+
+        function fileCategory(mime, name) {
+            if (mime && mime.startsWith('image/')) return 'image';
+            if (mime === 'application/pdf' || /\.pdf$/i.test(name)) return 'pdf';
+            return 'file';
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        shareFileInput.addEventListener('change', async () => {
+            const file = shareFileInput.files[0];
+            pendingFile = null;
+            if (!file) { filePreviewBox.classList.add('hidden'); filePreviewBox.innerHTML = ''; return; }
+
+            if (file.size > MAX_FILE_BYTES) {
+                filePreviewBox.classList.remove('hidden');
+                filePreviewBox.innerHTML = `<p class="text-xs text-red-500">⚠️ ไฟล์ "${escapeHtml(file.name)}" มีขนาด ${(file.size/1024/1024).toFixed(1)}MB ซึ่งเกิน 3MB — กรุณาเลือกไฟล์เล็กลง หรือใช้ลิงก์ Google Drive แทน</p>`;
+                shareFileInput.value = '';
+                return;
+            }
+
+            try {
+                const dataUrl = await fileToDataUrl(file);
+                const category = fileCategory(file.type, file.name);
+                pendingFile = { dataUrl, name: file.name, mime: file.type, category };
+                filePreviewBox.classList.remove('hidden');
+                if (category === 'image') {
+                    filePreviewBox.innerHTML = `<img src="${dataUrl}" class="thumb-img" style="height:90px;max-width:160px;"> <p class="text-xs section-sub mt-1">แนบรูปภาพ: ${escapeHtml(file.name)}</p>`;
+                } else if (category === 'pdf') {
+                    filePreviewBox.innerHTML = `<p class="text-xs section-sub">📄 แนบไฟล์ PDF: ${escapeHtml(file.name)}</p>`;
+                } else {
+                    filePreviewBox.innerHTML = `<p class="text-xs section-sub">📎 แนบไฟล์: ${escapeHtml(file.name)}</p>`;
+                }
+            } catch (e) {
+                filePreviewBox.classList.remove('hidden');
+                filePreviewBox.innerHTML = `<p class="text-xs text-red-500">⚠️ เกิดข้อผิดพลาดในการอ่านไฟล์ กรุณาลองใหม่</p>`;
+                pendingFile = null;
+            }
+        });
+
+        function resourceCardSkeleton(n) {
+            let html = '';
+            for (let i = 0; i < n; i++) {
+                html += `<div class="card p-5 rounded-xl shadow-sm border"><div class="skeleton h-4 w-20 mb-3"></div><div class="skeleton h-5 w-3/4"></div></div>`;
+            }
+            return html;
+        }
 
         function renderResources() {
             resourceBoard.innerHTML = '';
             if (resources.length === 0) {
                 resourceBoard.className = "block text-center py-8";
-                resourceBoard.innerHTML = `<p class="section-sub text-sm">ยังไม่มีข้อมูลสรุปบทเรียนในคลัง ลองแชร์ลิงก์แรกของห้องเรียนด้านบนได้เลย! 📑</p>`;
+                resourceBoard.innerHTML = `<p class="section-sub text-sm">ยังไม่มีข้อมูลสรุปบทเรียนในคลัง ลองแชร์ลิงก์หรือไฟล์แรกของห้องเรียนด้านบนได้เลย! 📑</p>`;
                 return;
             }
             resourceBoard.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
             resources.forEach(res => {
                 const div = document.createElement('div');
                 div.className = 'card p-5 rounded-xl shadow-sm border flex flex-col justify-between';
+
+                let fileChip = '';
+                let fileAction = '';
+                if (res.hasFile) {
+                    const icon = res.fileCategory === 'image' ? '🖼️' : (res.fileCategory === 'pdf' ? '📄' : '📎');
+                    fileChip = `<span class="file-chip ml-2">${icon} ${escapeHtml(res.fileName || 'ไฟล์แนบ')}</span>`;
+                    fileAction = `<button onclick="viewFile('${res.id}')" class="resource-link text-sm font-medium flex items-center gap-1">👁️ เปิดดูไฟล์</button>`;
+                }
+
+                const urlAction = res.url
+                    ? `<a href="${escapeHtml(res.url)}" target="_blank" rel="noopener noreferrer" class="resource-link text-sm font-medium flex items-center gap-1">🔗 เปิดลิงก์สรุปข้อมูล</a>`
+                    : '';
+
                 div.innerHTML = `
                     <div>
-                        <span class="resource-tag inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full mb-2">${res.subject}</span>
-                        <h4 class="font-bold section-title text-base mb-2">${res.title}</h4>
+                        <div class="flex items-center flex-wrap">
+                            <span class="resource-tag inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full mb-2">${escapeHtml(res.subject)}</span>
+                            ${fileChip}
+                        </div>
+                        <h4 class="font-bold section-title text-base mb-2">${escapeHtml(res.title)}</h4>
                     </div>
-                    <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: var(--border);">
-                        <a href="${res.url}" target="_blank" class="resource-link text-sm font-medium flex items-center gap-1">
-                            🔗 เปิดลิงก์สรุปข้อมูล
-                        </a>
-                        <button onclick="deleteResource(${res.id})" class="text-xs text-red-400 hover:text-red-600 transition">ลบ</button>
+                    <div class="mt-4 pt-3 border-t flex justify-between items-center flex-wrap gap-2" style="border-color: var(--border);">
+                        <div class="flex flex-col gap-1">
+                            ${urlAction}
+                            ${fileAction}
+                        </div>
+                        <button onclick="deleteResource('${res.id}')" class="text-xs text-red-400 hover:text-red-600 transition">ลบ</button>
                     </div>
                 `;
                 resourceBoard.appendChild(div);
             });
-            localStorage.setItem('student_resources', JSON.stringify(resources));
         }
 
-        shareForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const title = document.getElementById('share-title').value;
-            const subject = document.getElementById('share-subject').value;
-            const url = document.getElementById('share-url').value;
-            resources.unshift({ id: Date.now(), title, subject, url });
+        async function saveResourceIndex() {
+            await storageSet('resources', JSON.stringify(resources), true);
+        }
+
+        async function loadResources() {
+            resourceBoard.innerHTML = resourceCardSkeleton(2);
+            const raw = await storageGet('resources', true);
+            resources = raw ? JSON.parse(raw) : [];
             renderResources();
-            shareForm.reset();
+        }
+
+        shareForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('share-title').value.trim();
+            const subject = document.getElementById('share-subject').value;
+            const url = document.getElementById('share-url').value.trim();
+
+            if (!url && !pendingFile) {
+                alert('กรุณาใส่ลิงก์ หรือแนบไฟล์อย่างน้อยหนึ่งอย่าง');
+                return;
+            }
+
+            shareSubmitBtn.disabled = true;
+            shareSubmitBtn.innerHTML = '<span class="spinner"></span> กำลังโพสต์...';
+
+            const id = String(Date.now());
+            const newRes = { id, title, subject, url: url || '' };
+
+            try {
+                if (pendingFile) {
+                    const saved = await storageSet('file:' + id, pendingFile.dataUrl, true);
+                    if (!saved) throw new Error('บันทึกไฟล์ไม่สำเร็จ');
+                    newRes.hasFile = true;
+                    newRes.fileName = pendingFile.name;
+                    newRes.fileCategory = pendingFile.category;
+                }
+                resources.unshift(newRes);
+                await saveResourceIndex();
+                renderResources();
+                shareForm.reset();
+                filePreviewBox.classList.add('hidden');
+                filePreviewBox.innerHTML = '';
+                pendingFile = null;
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการโพสต์แชร์ กรุณาลองใหม่อีกครั้ง');
+                console.error(err);
+            } finally {
+                shareSubmitBtn.disabled = false;
+                shareSubmitBtn.innerHTML = '🚀 โพสต์แชร์';
+            }
         });
 
-        function deleteResource(id) {
-            if (confirm('คุณต้องการลบลิงก์สรุปนี้ใช่หรือไม่?')) {
-                resources = resources.filter(r => r.id !== id);
-                renderResources();
+        async function viewFile(id) {
+            const dataUrl = await storageGet('file:' + id, true);
+            if (!dataUrl) { alert('ไม่พบไฟล์ที่แนบไว้ อาจถูกลบไปแล้ว'); return; }
+            const win = window.open('', '_blank');
+            if (!win) { alert('เบราว์เซอร์บล็อกป๊อปอัป กรุณาอนุญาตเพื่อดูไฟล์'); return; }
+            if (dataUrl.startsWith('data:application/pdf')) {
+                win.document.write(`<iframe src="${dataUrl}" style="position:fixed;inset:0;width:100%;height:100%;border:none;"></iframe>`);
+            } else if (dataUrl.startsWith('data:image')) {
+                win.document.write(`<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${dataUrl}" style="max-width:100%;max-height:100vh;"></body>`);
+            } else {
+                win.location.href = dataUrl;
             }
         }
 
-        renderTodos();
-        renderResources();
+        async function deleteResource(id) {
+            if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) return;
+            const res = resources.find(r => r.id === id);
+            resources = resources.filter(r => r.id !== id);
+            renderResources();
+            await saveResourceIndex();
+            if (res && res.hasFile) {
+                await storageDelete('file:' + id, true);
+            }
+        }
+
+        // --- INIT ---
+        (async function init() {
+            await Promise.all([loadTheme(), loadTodos(), loadResources()]);
+        })();
     </script>
 </body>
 </html>
